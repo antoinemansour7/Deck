@@ -57,8 +57,10 @@ def login_to_site():
 
         if page.is_visible("h2:text('PowerCo Dashboard')") or page.is_visible("text='Welcome back, John Smith'"):
             print("Login successful!")
+            return "Login successful!"
         else:
             print("Login failed!")
+            return "Login failed!"
 
         browser.close()  # ✅ Now inside the 'with' block, ensuring Playwright stops properly
 
