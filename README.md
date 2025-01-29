@@ -32,7 +32,7 @@ playwright install
 ```
 
 #### Configuration
-Create a file named `config.py` in the project directory and add the following:
+Create a file named `config.py` in the `src` directory and add the following:
 ```python
 # Configuration file for scraper
 
@@ -46,8 +46,23 @@ DOWNLOAD_DIR = "downloads"
 ```
 
 ### Running the Script
-Run the following command:
+Navigate to the `src` directory and run the following command:
 ```sh
 python scraper.py
 ```
+
+### Usage
+1. Ensure that the `config.py` file is correctly configured with your credentials and settings and is located in the `src` directory.
+2. Navigate to the `src` directory.
+3. Run the script using the command mentioned above.
+4. The script will log in to the PowerCo dashboard, extract account data, and download bills and statements.
+5. Extracted data will be saved in `dashboard_data.json` and downloaded files will be saved in the `downloads` directory.
+
+### Troubleshooting
+- **Timeout Errors**: If you encounter timeout errors, try increasing the timeout values in the script.
+- **Login Issues**: Ensure that your credentials in `config.py` are correct.
+- **Missing Elements**: If the script fails to find certain elements, verify that the selectors used in the script match the current structure of the website.
+- **Dependencies**: Ensure all dependencies are installed correctly by running `pip install -r requirements.txt` and `playwright install`.
+
+
 
