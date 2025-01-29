@@ -59,10 +59,10 @@ def login_to_site(page):
     # Verify login success
     page.wait_for_load_state("networkidle")
     if not (page.is_visible("text='PowerCo Dashboard'") or page.is_visible("text='Welcome back, John Smith'")):
-        print("❌ Login failed!")
+        print("Login failed!")
         return False
 
-    print("✅ Login successful!")
+    print("Login successful!")
     return True
 
 
@@ -94,13 +94,13 @@ def extract_and_download_data(page):
             })
 
         except:
-            print(f"❌ Error extracting data for account {i+1}, skipping...")
+            print(f"Error extracting data for account {i+1}, skipping...")
 
     # Save extracted data to JSON
     with open("dashboard_data.json", "w") as json_file:
         json.dump(data, json_file, indent=4)
 
-    print("✅ Extracted data saved to dashboard_data.json")
+    print("Extracted data saved to dashboard_data.json")
 
     # Download all bills
     for entry in data:
@@ -111,9 +111,9 @@ def extract_and_download_data(page):
                 download = download_info.value
                 download_path = os.path.join(config.DOWNLOAD_DIR, f"{entry['account_number']}_latest_bill.pdf")
                 download.save_as(download_path)
-                print(f"✅ Downloaded: {download_path}")
+                print(f"Downloaded: {download_path}")
         except:
-            print(f"❌ Failed to download bill for {entry['account_number']}")
+            print(f"Failed to download bill for {entry['account_number']}")
 
     # Download all Recent Statements, handling pagination
     download_all_statements(page)
@@ -150,10 +150,10 @@ def download_all_statements(page):
                 download = download_info.value
                 download_path = os.path.join(config.DOWNLOAD_DIR, filename)
                 download.save_as(download_path)
-                print(f"✅ Downloaded: {download_path}")
+                print(f"Downloaded: {download_path}")
 
             except Exception as e:
-                print(f"❌ Failed to download statement for {account} ({statement_date}): {e}")
+                print(f"Failed to download statement for {account} ({statement_date}): {e}")
 
         # Check for pagination and click "Next" if available
         next_button = page.locator("text='Next'")
@@ -177,7 +177,7 @@ def main():
         if is_logged_in:
             extract_and_download_data(page)
         else:
-            print("❌ Login failed, exiting...")
+            print("Login failed, exiting...")
 
         browser.close()
 
