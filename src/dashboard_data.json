@@ -1,0 +1,18 @@
+[
+    {
+        "address": "123 Main Street",
+        "account_number": "1234-5678",
+        "current_balance": "$142.50",
+        "due_date": "March 15, 2024",
+        "last_month_usage": "850 kWh",
+        "bill_link": "/static/sample.pdf"
+    },
+    {
+        "address": "456 Oak Avenue",
+        "account_number": "8765-4321",
+        "current_balance": "$98.75",
+        "due_date": "March 20, 2024",
+        "last_month_usage": "620 kWh",
+        "bill_link": "/static/sample.pdf"
+    }
+]

@@ -3,6 +3,7 @@ import time
 import json
 import os
 import re
+import pdfplumber  # To extract text from PDFs
 import config  # Import configuration settings
 
 # Ensure the download directory exists
@@ -66,6 +67,103 @@ def login_to_site(page):
     return True
 
 
+
+
+import pdfplumber
+import json
+import os
+import re
+
+def extract_data_from_pdf(pdf_path):
+    """Extracts structured data from a PDF bill and saves it as JSON."""
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
+
+        data = {}
+
+        # Extract Account Number
+        match = re.search(r"Account No\.?:?\s*(\d+)", text, re.IGNORECASE)
+        if match:
+            data["account_number"] = match.group(1)
+
+        # Extract Service Address
+        match = re.search(r"Service Address:\s*([\w\s,]+)", text, re.IGNORECASE)
+        if match:
+            data["service_address"] = match.group(1).strip()
+
+        # Extract Water & Sewer Charges
+        match = re.search(r"Water/Sewer Services(?:.*?)?\$([\d,]+\.\d{2})", text, re.IGNORECASE)
+        if match:
+            data["water_sewer_charges"] = float(match.group(1).replace(",", ""))
+
+        # Extract Solid Waste Charges
+        match = re.search(r"Solid Waste Management Services(?:.*?)?\$([\d,]+\.\d{2})", text, re.IGNORECASE)
+        if match:
+            data["solid_waste_charges"] = float(match.group(1).replace(",", ""))
+
+        # Extract Total Charges
+        match = re.search(r"Total\s*\$([\d,]+\.\d{2})", text, re.IGNORECASE)
+        if match:
+            data["total_charges"] = float(match.group(1).replace(",", ""))
+
+
+        match = re.search(r"Consumption\s*([\d,]+\.\d{2})\s*m3", text, re.IGNORECASE)
+        if match:
+            data["consumption_m3"] = float(match.group(1).replace(",", ""))
+
+        # Save extracted data to JSON
+        json_filename = os.path.splitext(pdf_path)[0] + ".json"
+        with open(json_filename, "w") as json_file:
+            json.dump(data, json_file, indent=4)
+
+    except Exception as e:
+        pass  # Ignore errors silently
+
+    
+def download_all_statements(page):
+    """Downloads all recent statements across multiple pages, ensuring unique filenames."""
+    page.wait_for_selector("table tbody tr td a[href$='.pdf']")
+    
+    while True:
+        statement_rows = page.locator("tbody tr")  # Get all statement rows
+        
+        for i in range(statement_rows.count()):
+            try:
+                row = statement_rows.nth(i)
+                
+                # Extract the account number and statement date
+                account = row.locator("td:nth-child(1)").text_content().strip()  # First column
+                statement_date = row.locator("td:nth-child(2)").text_content().strip()  # Second column
+                
+                # Format the filename as statement_ACCOUNTNUMBER_STATEMENTDATE.pdf
+                formatted_date = statement_date.replace(" ", "")  # Remove spaces
+                filename = f"statement_{account.replace(' ', '')}_{formatted_date}.pdf"
+
+                # Click the download link
+                with page.expect_download() as download_info:
+                    row.locator("td:nth-child(5) a[href$='.pdf']").click()
+                
+                download = download_info.value
+                download_path = os.path.join(config.DOWNLOAD_DIR, filename)
+                download.save_as(download_path)
+                print(f"Downloaded: {download_path}")
+
+                # Extract data from the downloaded PDF
+                extract_data_from_pdf(download_path)
+
+            except Exception as e:
+                print(f"Failed to download statement for {account} ({statement_date}): {e}")
+
+        # Check for pagination and click "Next" if available
+        next_button = page.locator("text='Next'")
+        if next_button.is_visible():
+            next_button.click()
+            time.sleep(2)  # Delay to avoid rate-limiting
+        else:
+            break  # No more pages, exit the loop
+
+
 def extract_and_download_data(page):
     """Extracts user account data and downloads bills/statements."""
     data = []
@@ -79,7 +177,7 @@ def extract_and_download_data(page):
             current_balance = account.locator("span.font-semibold").text_content().strip()
             due_date = account.locator("div.flex.justify-between:nth-child(2) > span:nth-child(2)").text_content().strip()
             last_month_usage = account.locator("div.flex.justify-between:nth-child(3) > span:nth-child(2)").text_content().strip()
-            
+
             # Get the bill download link
             bill_link = account.locator("a.bg-blue-600").get_attribute("href")
 
@@ -112,56 +210,15 @@ def extract_and_download_data(page):
                 download_path = os.path.join(config.DOWNLOAD_DIR, f"{entry['account_number']}_latest_bill.pdf")
                 download.save_as(download_path)
                 print(f"Downloaded: {download_path}")
+
+                # Extract data from the downloaded PDF
+                extract_data_from_pdf(download_path)
+
         except:
             print(f"Failed to download bill for {entry['account_number']}")
 
-    # Download all Recent Statements, handling pagination
+    # Download all recent statements
     download_all_statements(page)
-
-
-def get_downloaded_statements():
-    """Get a list of already downloaded statement filenames to prevent duplicates."""
-    return set(os.listdir(config.DOWNLOAD_DIR))
-
-
-def download_all_statements(page):
-    """Downloads all recent statements across multiple pages, ensuring unique filenames."""
-    page.wait_for_selector("table tbody tr td a[href$='.pdf']")
-    
-    while True:
-        statement_rows = page.locator("tbody tr")  # Get all statement rows
-        
-        for i in range(statement_rows.count()):
-            try:
-                row = statement_rows.nth(i)
-                
-                # Extract the account number and statement date
-                account = row.locator("td:nth-child(1)").text_content().strip()  # First column
-                statement_date = row.locator("td:nth-child(2)").text_content().strip()  # Second column
-                
-                # Format the filename as statement_ACCOUNTNUMBER_STATEMENTDATE.pdf
-                formatted_date = statement_date.replace(" ", "")  # Remove spaces (e.g., "January 2025" -> "January2025")
-                filename = f"statement_{account.replace(' ', '')}_{formatted_date}.pdf"
-
-                # Click the download link
-                with page.expect_download() as download_info:
-                    row.locator("td:nth-child(5) a[href$='.pdf']").click()
-                
-                download = download_info.value
-                download_path = os.path.join(config.DOWNLOAD_DIR, filename)
-                download.save_as(download_path)
-                print(f"Downloaded: {download_path}")
-
-            except Exception as e:
-                print(f"Failed to download statement for {account} ({statement_date}): {e}")
-
-        # Check for pagination and click "Next" if available
-        next_button = page.locator("text='Next'")
-        if next_button.is_visible():
-            next_button.click()
-            time.sleep(2)  # Delay to avoid rate-limiting
-        else:
-            break  # No more pages, exit the loop
 
 
 def main():
@@ -171,10 +228,7 @@ def main():
         context = browser.new_context(accept_downloads=True)  # Enable downloads
         page = context.new_page()
 
-        # Perform login
-        is_logged_in = login_to_site(page)
-
-        if is_logged_in:
+        if login_to_site(page):
             extract_and_download_data(page)
         else:
             print("Login failed, exiting...")
@@ -182,6 +236,5 @@ def main():
         browser.close()
 
 
-# Run the script
 if __name__ == "__main__":
     main()
