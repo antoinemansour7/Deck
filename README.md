@@ -11,6 +11,7 @@ This script uses Playwright to log in to PowerCo's customer dashboard, extract a
 - Downloads bills and recent statements
 - Handles multiple pages of statements
 - Saves extracted data in JSON format
+- Converts downloaded PDFs to JSON
 
 ### Installation
 
@@ -57,6 +58,12 @@ python scraper.py
 3. Run the script using the command mentioned above.
 4. The script will log in to the PowerCo dashboard, extract account data, and download bills and statements.
 5. Extracted data will be saved in `dashboard_data.json` and downloaded files will be saved in the `downloads` directory.
+
+### Testing
+To run the tests, navigate to the `src/tests` directory and run the following command:
+```sh
+pytest test_scraper.py -s
+```
 
 ### Troubleshooting
 - **Timeout Errors**: If you encounter timeout errors, try increasing the timeout values in the script.
