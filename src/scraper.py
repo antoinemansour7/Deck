@@ -68,12 +68,6 @@ def login_to_site(page):
 
 
 
-
-import pdfplumber
-import json
-import os
-import re
-
 def extract_data_from_pdf(pdf_path):
     """Extracts structured data from a PDF bill and saves it as JSON."""
     try:
